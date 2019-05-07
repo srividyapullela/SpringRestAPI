@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<project name="patch zip" basedir="." default="patch">
+	<property file="build.properties"/>
+	<!-- Main targets  -->
+	<target name="patch" depends="init, patchbuild, finally"/>
+	<!-- initialization of distrubution directory -->
+	<target name="init">
+		<tstamp>
+			<format property="start.timestamp" pattern="dd-MMM-yy HH:mm:ss"/>
+		</tstamp>
+		<echo message="Start building Project @ ${start.timestamp}"/>
+		<delete dir="${dist}"/>
+		<mkdir dir="${dist}"/>
+		<delete dir="${patch.build.dir}"/>
+	</target>
+	<!-- Java library -->
+	<path id="master-classpath">
+		<!--
+	<fileset dir="${basedir}/spring-hibernate-apache-commons-library">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${basedir}/SDL-CD-library">
+			<include name="*.jar" />  
+		</fileset> 
+		-->
+		<fileset dir="${basedir}/WebContent/WEB-INF/lib">
+			<include name="*.jar"/>
+		</fileset>
+		<fileset dir="build-lib">
+			<include name="*.jar"/>
+		</fileset>
+		<pathelement path="${build.dir}"/>
+	</path>
+	<!-- Target for patch build generation -->
+	<target name="patchbuild" description="patch build to create package for specific files">
+		<mkdir dir="${patch.build.dir}/META-INF"/>
+		<!-- antcontrib definition to read file path from property file -->
+		<taskdef resource="net/sf/antcontrib/antlib.xml">
+			<classpath>
+				<pathelement location="${ant-contrib.jar.file}"/>
+			</classpath>
+		</taskdef>
+		<!-- initializing log file -->
+		<tstamp>
+			<format property="logfile.timestamp" pattern="MM-dd-yy HH MM"/>
+		</tstamp>
+		<var name="logfilepath" value="${change.log.file}.${logfile.timestamp}.txt"/>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">${line.separator}############################################################################${line.separator}</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">##Patch Build for the ${ant.project.name} Project##</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">${line.separator}############################################################################${line.separator}</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">##Built by ${user.name} on ${os.name} using ${java.vendor} ${java.version} on date ${TODAY}</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">${line.separator}##Built date - ${TODAY}</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">${line.separator}############################################################################${line.separator}</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">##Files Included in Patch Build</echo>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">${line.separator}############################################################################${line.separator}</echo>
+		<!-- Reading filepath from property file -->
+		<for param="filepath">
+			<tokens>
+				<file file="${patch.property.file}"/>
+			</tokens>
+			<sequential>
+				<!-- Adding file path in log file -->
+				<if>
+					<not>
+						<contains string="@{filepath}" substring="#"/>
+					</not>
+					<then>
+						<if>
+							<length string="@{filepath}" trim="true" when="greater" length="0"/>
+							<then>
+								<echo>@{filepath}</echo>
+				<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">@{filepath}${line.separator}</echo>
+							</then>
+						</if>
+					</then>
+				</if>
+				<!--Copying non java file -->
+				<fileset id="filesetid" dir="${basedir}">
+					<filename name="@{filepath}"/>
+				</fileset>
+				<copy todir="${patch.build.dir}" verbose="true">
+					<fileset refid="filesetid"/>
+				</copy>
+				<!--Compiling java file -->
+				<mkdir dir="${patch.classes.temp}"/>
+				<javac destdir="${patch.classes.temp}" debug="true" deprecation="false" optimize="false" failonerror="true" includeantruntime="false" encoding="iso-8859-1">
+					<src path="${src.dir}"/>
+					<include name="@{filepath}"/>
+					<classpath refid="master-classpath"/>
+				</javac>
+				<!--Copying required class file -->
+				<propertyregex property="javafilepath" input="@{filepath}" regexp="\.java" replace="" override="true"/>
+				<copy todir="${patch.build.dir}/WEB-INF/classes">
+					<fileset dir="${patch.classes.temp}" includes="${javafilepath}.class, ${javafilepath}$$*.class">
+						<include name="${javafilepath}"/>
+					</fileset>
+				</copy>
+			</sequential>
+		</for>
+		<delete dir="${patch.classes.temp}"/>
+		<!--moving files from WebContent to context -->
+		<move todir="${patch.build.dir}" failonerror="false">
+			<fileset dir="${patch.build.dir}/WebContent"/>
+		</move>
+		<!--moving property and xml file from patch build src to classes -->
+		<move todir="${patch.build.dir}/WEB-INF/classes" failonerror="false">
+			<fileset dir="${patch.build.dir}/src"/>
+		</move>
+		<!--Creating reliant.war folder structure-->
+		<mkdir dir="${dist}/patch/${war.file}"/>
+		<move todir="${dist}/patch/${war.file}">
+			<fileset dir="${patch.build.dir}"/>
+		</move>
+		<echo file="${patch.build.dir}/META-INF/${logfilepath}" append="true">${line.separator}############################################################################${line.separator}</echo>
+		<!--Creating zip of war file-->
+		<zip destfile="${dist}/${patch.zip.file}" basedir="${dist}/patch"/>
+		<delete dir="${dist}/patch"/>
+	</target>
+	<!-- Target for full build generation -->
+	<target name="fullbuild" description="Compile main source tree java files" depends="patchbuild">
+		<ant antfile="build.xml"/>
+	</target>
+	<!-- Clean up of temporary build directory -->
+	<target name="finally">
+		<delete dir="${build.dir}"/>
+		<delete dir="${patch.build.dir}"/>
+		<tstamp>
+			<format property="end.timestamp" pattern="dd-MMM-yy HH:mm:ss"/>
+		</tstamp>
+		<echo message="Project Build SucessFully @ ${end.timestamp}"/>
+	</target>
+</project>

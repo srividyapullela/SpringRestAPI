@@ -1,0 +1,138 @@
+package com.reliant.sm.model;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.reliant.sm.util.DateUtil;
+
+public class MonthlyUsage {
+	
+	private List<Day> dailyDataList;
+	private String totalCost = "0.00";
+	private String totalUsage = "0.00";
+	private String month;
+	private int monthNum;
+	private String avgTempHigh;
+	private String avgTempLow;
+	private int year;
+
+	public List<Day> getDailyDataList() {
+		return dailyDataList;
+	}
+
+	public void setDailyDataList(List<Day> dailyDataList) {
+		this.dailyDataList = dailyDataList;
+	}
+	
+	public void addCostToTotalCost(String cost){
+		if("null" != cost && StringUtils.isNotBlank(cost)){
+			BigDecimal bd = new BigDecimal(this.totalCost);
+			this.totalCost = bd.add(new BigDecimal(cost)).toString();
+		}
+	}
+	
+	public void addUsageToTotalUsage(String usage){
+		if("null" != usage && StringUtils.isNotBlank(usage)){
+			BigDecimal bd = new BigDecimal(this.totalUsage);
+			this.totalUsage = bd.add(new BigDecimal(usage)).toString();
+		}
+	}
+
+	public String getTotalCost() {
+		return totalCost;
+	}
+
+	public void setTotalCost(String totalCost) {
+		this.totalCost = totalCost;
+	}
+
+	public String getTotalUsage() {
+		return totalUsage;
+	}
+
+	public void setTotalUsage(String totalUsage) {
+		this.totalUsage = totalUsage;
+	}
+
+	public String getMonth() {
+		return month;
+	}
+
+	public void setMonth(String month) {
+		this.month = month;
+		setMonthNum();
+	}
+
+	public String getAvgTempHigh() {
+		return avgTempHigh;
+	}
+
+	public void setAvgTempHigh(String avgTempHigh) {
+		this.avgTempHigh = avgTempHigh;
+	}
+
+	public String getAvgTempLow() {
+		return avgTempLow;
+	}
+
+	public void setAvgTempLow(String avgTempLow) {
+		this.avgTempLow = avgTempLow;
+	}
+	
+	
+	
+	public int getYear() {
+		return year;
+	}
+
+	public void setYear(int year) {
+		this.year = year;
+	}
+
+	public void calAverageTempHigh(){
+		
+		String avgTemp = "0.0";
+		List<Day> dailyList = this.dailyDataList;
+		BigDecimal highTempTtl = new BigDecimal("0");
+		if(null != dailyList && dailyList.size() >0){
+			for(Day day : dailyList){
+				highTempTtl = highTempTtl.add(new BigDecimal(("null" != day.getTempHigh() && StringUtils.isNotBlank(day.getTempHigh()))?day.getTempHigh():"0"));
+			}
+			avgTemp = highTempTtl.divide(new BigDecimal(dailyList.size()), RoundingMode.valueOf(2)).toString();
+		}
+		this.avgTempHigh = avgTemp;
+	}
+	
+	public void calAverageTempLow(){
+		
+		String avgTemp = "0.0";
+		List<Day> dailyList = this.dailyDataList;
+		BigDecimal lowTempTtl = new BigDecimal("0");
+		if(dailyList.size() >0){
+			for(Day day : dailyList){
+				lowTempTtl = lowTempTtl.add(new BigDecimal(("null" != day.getTempLow() && StringUtils.isNotBlank(day.getTempLow()))?day.getTempLow():"0"));
+			}
+			avgTemp = lowTempTtl.divide(new BigDecimal(dailyList.size()), RoundingMode.valueOf(2)).toString();
+		}
+		this.avgTempLow = avgTemp;
+	}
+	
+	public int getMonthNum() {
+		return monthNum;
+	}
+
+	public void setMonthNum() {
+		if("null" != this.month && StringUtils.isNotBlank(this.month)){
+			if(null != this.dailyDataList && this.dailyDataList.size() >0){
+				Date date = DateUtil.getDate(this.getDailyDataList().get(0).getActualDay(), "yyyy-MM-dd");
+				this.monthNum = DateUtil.getMonthInt(date);
+				this.year = DateUtil.getYearInt(date);
+			}
+		}
+	}
+
+}

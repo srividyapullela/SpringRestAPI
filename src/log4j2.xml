@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Configuration monitorInterval="5">
+
+	<Properties>
+		<Property name="log-path">/apps01/logs/WebSphere/usage_rest</Property>
+		<Property name="log-level-info">INFO</Property>
+		<Property name="log-level-fatal">FATAL</Property>
+		<Property name="log-level-debug">DEBUG</Property>
+		<Property name="log-level-off">OFF</Property>
+		<Property name="log-level-error">ERROR</Property>
+		<Property name="log-level-warn">WARN</Property>
+	</Properties>
+
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d [%-5p] %c - %m%n" />
+		</Console>
+
+		<RollingFile name="RollingFile" fileName="${log-path}/usagerest.log"
+			filePattern="${log-path}/usagerest-%d{yyyy-MM-dd}.log">
+			<PatternLayout>
+				<Pattern>%d [%-5p] %c - %m%n</Pattern>
+			</PatternLayout>
+
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" /><!--Daily Rolling file appender -->
+			</Policies>
+			<DefaultRolloverStrategy max="4" />
+		</RollingFile>
+	</Appenders>
+  <Loggers>
+    <Logger name="com.reliant.sm" level ="DEBUG"/>
+    
+    <Root level="${log-level-info}" additivity="false">
+    	<AppenderRef ref="Console" />
+		<AppenderRef ref="RollingFile" />
+	</Root>
+   </Loggers>
+</Configuration>

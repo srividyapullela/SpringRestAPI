@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:beans="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:jee="http://www.springframework.org/schema/jee"
+    xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd">
+ 
+    <!-- Enables the Spring MVC @Controller programming model -->
+    <annotation-driven />
+    <context:component-scan base-package="com.reliant.sm.*" />
+   	
+   	<context:property-placeholder location="classpath*:properties/usage_history_db.properties" order="0" ignore-unresolvable="false" />
+   
+    <beans:bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+        <beans:property name="basenames">
+	        <util:list>
+	           	<beans:value>exceptions</beans:value>
+	        </util:list>
+        </beans:property>
+    </beans:bean>
+    
+    <beans:bean id="environmentMessageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<beans:property name="basename" value="classpath:properties/usage_history_db"/>
+		<beans:property name="cacheSeconds" value="0" />
+	</beans:bean>
+ 
+    
+    <!-- To  convert JSON to Object and vice versa START-->
+    
+    <beans:bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+        <beans:property name="messageConverters">
+            <beans:list>
+                <beans:ref bean="jsonMessageConverter"/>
+            </beans:list>
+        </beans:property>
+    </beans:bean>
+    
+    <beans:bean id="jsonMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+    </beans:bean> 
+ 
+  	<!-- To  convert JSON to Object and vice versa END-->
+ 	
+ 	<!-- DATA SOURCE CONFIGURATION START -->
+    
+     <beans:bean id="sqlQuerySource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<beans:property name="basename" value="classpath:properties/usage_history_db"/>
+		<beans:property name="cacheSeconds" value="0" />
+		<beans:qualifier value="sqlQuerySource"/>
+	</beans:bean>
+	
+	
+	<jee:jndi-lookup id="smartDataSource"
+			jndi-name="jdbc/smart_user"
+			cache="true"
+			resource-ref="true"
+			lookup-on-startup="false"
+			proxy-interface="javax.sql.DataSource"/>
+
+	<beans:bean id="smartMainJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<beans:property name="dataSource" ref="smartDataSource"/>
+		<beans:qualifier value="smartMainJdbcTemplate"/>
+	</beans:bean>
+
+	<beans:bean name="simpleJdbcCall" class="org.springframework.jdbc.core.simple.SimpleJdbcCall" scope="prototype">
+       		<beans:constructor-arg><beans:ref bean="smartDataSource"/></beans:constructor-arg>
+    </beans:bean>
+    
+   	<beans:bean id="smartMainSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<beans:property name="dataSource" ref="smartDataSource" />
+		<beans:property name="packagesToScan" value="com.reliant.sm.dao.hibernate" />
+		<beans:property name="hibernateProperties">
+			<beans:props>
+				<beans:prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</beans:prop>
+				<beans:prop key="hibernate.show_sql">false</beans:prop>
+				<beans:prop key="hibernate.current_session_context_class">thread</beans:prop>
+			</beans:props>
+		</beans:property>	
+	</beans:bean>
+    
+    
+    <jee:jndi-lookup id="cpdbDataSource"
+		jndi-name="jdbc/cpdb1_main_user"
+		cache="true"
+		resource-ref="true"
+		lookup-on-startup="false"
+		proxy-interface="javax.sql.DataSource"/>
+
+	<beans:bean id="cpdbJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<beans:property name="dataSource" ref="cpdbDataSource"/>
+		<beans:qualifier value="cpdbJdbcTemplate"/>
+	</beans:bean>
+
+	<beans:bean name="cpdbJdbcCall" class="org.springframework.jdbc.core.simple.SimpleJdbcCall" scope="prototype">
+       		<beans:constructor-arg><beans:ref bean="cpdbDataSource"/></beans:constructor-arg>
+    </beans:bean>
+    
+    <beans:bean id="cpdbMainSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<beans:property name="dataSource" ref="cpdbDataSource" />
+		<beans:property name="packagesToScan" value="com.reliant.sm.dao.hibernate" />
+		<beans:property name="hibernateProperties">
+			<beans:props>
+				<beans:prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</beans:prop>
+				<beans:prop key="hibernate.show_sql">false</beans:prop>
+				<beans:prop key="hibernate.current_session_context_class">thread</beans:prop>
+			</beans:props>
+		</beans:property>	
+	</beans:bean>
+ 	<!-- DATA SOURCE CONFIGURATION END -->
+ 	
+<!-- resources exclusions from Spring Servlet mapping -->
+<mvc:resources mapping="/docs/**" location="/docs/" />
+<!-- resources exclusions from Spring Servlet mapping -->
+
+</beans:beans>
